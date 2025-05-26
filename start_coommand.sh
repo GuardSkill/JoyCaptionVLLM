@@ -1,0 +1,1 @@
+CUDA_VISIBLE_DEVICES=0 vllm serve llama-joycaption-alpha-two-hf-llava --max-model-len 4096 --enable-prefix-caching

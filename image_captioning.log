@@ -1,0 +1,27 @@
+2025-03-27 15:26:33,554 - INFO - HTTP Request: GET https://api.openai.com/v1/models "HTTP/1.1 403 Forbidden"
+2025-03-27 15:26:33,556 - ERROR - Error processing /Disk1/Pyprojects/JoyCaptionVLLM/test_imgs/ComfyUI_10134_.png: Error code: 403 - {'error': {'code': 'unsupported_country_region_territory', 'message': 'Country, region, or territory not supported', 'param': None, 'type': 'request_forbidden'}}
+2025-03-27 15:26:33,612 - INFO - HTTP Request: GET https://api.openai.com/v1/models "HTTP/1.1 403 Forbidden"
+2025-03-27 15:26:33,614 - ERROR - Error processing /Disk1/Pyprojects/JoyCaptionVLLM/test_imgs/ComfyUI_10137_.png: Error code: 403 - {'error': {'code': 'unsupported_country_region_territory', 'message': 'Country, region, or territory not supported', 'param': None, 'type': 'request_forbidden'}}
+2025-03-27 15:26:33,667 - INFO - HTTP Request: GET https://api.openai.com/v1/models "HTTP/1.1 403 Forbidden"
+2025-03-27 15:26:33,668 - ERROR - Error processing /Disk1/Pyprojects/JoyCaptionVLLM/test_imgs/flow_512.jpg: Error code: 403 - {'error': {'code': 'unsupported_country_region_territory', 'message': 'Country, region, or territory not supported', 'param': None, 'type': 'request_forbidden'}}
+2025-03-27 15:26:33,724 - INFO - HTTP Request: GET https://api.openai.com/v1/models "HTTP/1.1 403 Forbidden"
+2025-03-27 15:26:33,726 - ERROR - Error processing /Disk1/Pyprojects/JoyCaptionVLLM/test_imgs/ComfyUI_10136_.png: Error code: 403 - {'error': {'code': 'unsupported_country_region_territory', 'message': 'Country, region, or territory not supported', 'param': None, 'type': 'request_forbidden'}}
+2025-03-27 15:26:33,776 - INFO - HTTP Request: GET https://api.openai.com/v1/models "HTTP/1.1 403 Forbidden"
+2025-03-27 15:26:33,777 - ERROR - Error processing /Disk1/Pyprojects/JoyCaptionVLLM/test_imgs/flow2_512.jpg: Error code: 403 - {'error': {'code': 'unsupported_country_region_territory', 'message': 'Country, region, or territory not supported', 'param': None, 'type': 'request_forbidden'}}
+2025-03-27 15:26:33,777 - INFO - Processing complete. Total processed: 0, Failed: 5
+2025-03-27 15:28:43,488 - INFO - Retrying request to /models in 0.437919 seconds
+2025-03-27 15:28:43,928 - INFO - Retrying request to /models in 0.943041 seconds
+2025-03-27 15:28:44,873 - ERROR - Error processing /Disk1/Pyprojects/JoyCaptionVLLM/test_imgs/ComfyUI_10134_.png: Connection error.
+2025-03-27 15:28:44,879 - INFO - Retrying request to /models in 0.427189 seconds
+2025-03-27 15:28:45,308 - INFO - Retrying request to /models in 0.905711 seconds
+2025-03-27 15:28:46,216 - ERROR - Error processing /Disk1/Pyprojects/JoyCaptionVLLM/test_imgs/ComfyUI_10137_.png: Connection error.
+2025-03-27 15:28:46,218 - INFO - Retrying request to /models in 0.487535 seconds
+2025-03-27 15:28:46,707 - INFO - Retrying request to /models in 0.884369 seconds
+2025-03-27 15:28:47,593 - ERROR - Error processing /Disk1/Pyprojects/JoyCaptionVLLM/test_imgs/flow_512.jpg: Connection error.
+2025-03-27 15:28:47,599 - INFO - Retrying request to /models in 0.476194 seconds
+2025-03-27 15:28:48,076 - INFO - Retrying request to /models in 0.807873 seconds
+2025-03-27 15:28:48,886 - ERROR - Error processing /Disk1/Pyprojects/JoyCaptionVLLM/test_imgs/ComfyUI_10136_.png: Connection error.
+2025-03-27 15:28:48,888 - INFO - Retrying request to /models in 0.451537 seconds
+2025-03-27 15:28:49,341 - INFO - Retrying request to /models in 0.932966 seconds
+2025-03-27 15:28:50,276 - ERROR - Error processing /Disk1/Pyprojects/JoyCaptionVLLM/test_imgs/flow2_512.jpg: Connection error.
+2025-03-27 15:28:50,277 - INFO - Processing complete. Total processed: 0, Failed: 5
