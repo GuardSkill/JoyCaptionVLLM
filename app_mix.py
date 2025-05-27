@@ -148,6 +148,7 @@ DESCRIPTION = """
 - **📱 社媒文案**: 适合社交媒体的吸引人文案
 - **🎯 Stable Diffusion提示词**: 生成SD风格的提示词
 - **🎪 MidJourney提示词**: 生成MJ风格的提示词
+- **🎪 Danbooru标签**: 标签形式的提示词
 """
 
 # 保持英文的提示词模板
@@ -177,6 +178,26 @@ CAPTION_TYPE_MAP = {
         "Write a MidJourney prompt for this image within {word_count} words.",
         "Write a {length} MidJourney prompt for this image.",
     ],
+    "Danbooru标签": [
+		"Generate only comma-separated Danbooru tags (lowercase_underscores). Strict order: `artist:`, `copyright:`, `character:`, `meta:`, then general tags. Include counts (1girl), appearance, clothing, accessories, pose, expression, actions, background. Use precise Danbooru syntax. No extra text.",
+		"Generate only comma-separated Danbooru tags (lowercase_underscores). Strict order: `artist:`, `copyright:`, `character:`, `meta:`, then general tags. Include counts (1girl), appearance, clothing, accessories, pose, expression, actions, background. Use precise Danbooru syntax. No extra text. {word_count} words or less.",
+		"Generate only comma-separated Danbooru tags (lowercase_underscores). Strict order: `artist:`, `copyright:`, `character:`, `meta:`, then general tags. Include counts (1girl), appearance, clothing, accessories, pose, expression, actions, background. Use precise Danbooru syntax. No extra text. {length} length.",
+	],
+	"e621标签": [
+		"Write a comma-separated list of e621 tags in alphabetical order for this image. Start with the artist, copyright, character, species, meta, and lore tags (if any), prefixed by 'artist:', 'copyright:', 'character:', 'species:', 'meta:', and 'lore:'. Then all the general tags.",
+		"Write a comma-separated list of e621 tags in alphabetical order for this image. Start with the artist, copyright, character, species, meta, and lore tags (if any), prefixed by 'artist:', 'copyright:', 'character:', 'species:', 'meta:', and 'lore:'. Then all the general tags. Keep it under {word_count} words.",
+		"Write a {length} comma-separated list of e621 tags in alphabetical order for this image. Start with the artist, copyright, character, species, meta, and lore tags (if any), prefixed by 'artist:', 'copyright:', 'character:', 'species:', 'meta:', and 'lore:'. Then all the general tags.",
+	],
+	"Rule34标签": [
+		"Write a comma-separated list of rule34 tags in alphabetical order for this image. Start with the artist, copyright, character, and meta tags (if any), prefixed by 'artist:', 'copyright:', 'character:', and 'meta:'. Then all the general tags.",
+		"Write a comma-separated list of rule34 tags in alphabetical order for this image. Start with the artist, copyright, character, and meta tags (if any), prefixed by 'artist:', 'copyright:', 'character:', and 'meta:'. Then all the general tags. Keep it under {word_count} words.",
+		"Write a {length} comma-separated list of rule34 tags in alphabetical order for this image. Start with the artist, copyright, character, and meta tags (if any), prefixed by 'artist:', 'copyright:', 'character:', and 'meta:'. Then all the general tags.",
+	],
+	"Booru-like标签": [
+		"Write a list of Booru-like tags for this image.",
+		"Write a list of Booru-like tags for this image within {word_count} words.",
+		"Write a {length} list of Booru-like tags for this image.",
+	],
     "艺术评论": [
         "Analyze this image like an art critic would with information about its composition, style, symbolism, the use of color, light, any artistic movement it might belong to, etc.",
         "Analyze this image like an art critic would with information about its composition, style, symbolism, the use of color, light, any artistic movement it might belong to, etc. Keep it within {word_count} words.",
@@ -219,7 +240,18 @@ EXTRA_OPTIONS_MAP = {
     "避免无用的描述开头": "Your response will be used by a text-to-image model, so avoid useless meta phrases like \"This image shows…\", \"You are looking at...\", etc.",
 }
 
-
+# 🔥 新增：分批文件处理器
+class BatchFileProcessor:
+    def __init__(self, batch_size=50):
+        self.batch_size = batch_size
+        
+    def create_batches(self, files):
+        """创建批次，避免内存溢出"""
+        batches = []
+        for i in range(0, len(files), self.batch_size):
+            batches.append(files[i:i + self.batch_size])
+        return batches
+    
 def create_openai_client(api_key: str, base_url: str) -> OpenAI:
     """创建OpenAI客户端"""
     return OpenAI(api_key=api_key, base_url=base_url)
@@ -719,16 +751,16 @@ with gr.Blocks(theme=gr.themes.Soft(), title="🎨 JoyCaption 混合模式") as 
                     # 生成参数
                     with gr.Accordion("🎛️ 生成参数", open=False):
                         temperature_slider = gr.Slider(
-                            minimum=0.0, maximum=2.0, value=0.9, step=0.05,
+                            minimum=0.0, maximum=2.0, value=0.6, step=0.05,
                             label="🌡️ Temperature",
                             info="数值越高生成越随机"
                         )
                         top_p_slider = gr.Slider(
-                            minimum=0.0, maximum=1.0, value=0.7, step=0.01,
+                            minimum=0.0, maximum=1.0, value=0.9, step=0.01,
                             label="🎯 Top-p"
                         )
                         max_tokens_slider = gr.Slider(
-                            minimum=1, maximum=512, value=256, step=1,
+                            minimum=1, maximum=1024, value=512, step=1,
                             label="📊 最大Token数"
                         )
                 
@@ -1113,66 +1145,24 @@ with gr.Blocks(theme=gr.themes.Soft(), title="🎨 JoyCaption 混合模式") as 
         outputs=output_caption,
     )
     
-    # 批量处理
-    def process_batch_wrapper(files, prompt, base_url, api_key, temp, top_p, max_tokens):
-        """包装批量处理函数以处理文件输入"""
-        if not files:
-            return "❌ 请先上传图片", gr.update(visible=False)
-        
-        files_info = []
-        for file in files:
-            try:
-                # 获取原始文件名
-                original_filename = os.path.basename(file.name)
-                image = Image.open(file.name)
-                files_info.append((image, original_filename))
-            except Exception as e:
-                logging.error(f"无法打开图片 {file.name}: {str(e)}")
-                continue
-        
-        if not files_info:
-            return "❌ 没有有效的图片", gr.update(visible=False)
-        
-        status, zip_path = process_batch_images(
-            files_info, prompt, base_url, api_key, temp, top_p, max_tokens
-        )
-        
-        if zip_path:
-            return status, gr.update(value=zip_path, visible=True)
-        else:
-            return status, gr.update(visible=False)
-    
-    batch_generate_btn.click(
-        process_batch_wrapper,
-        inputs=[
-            batch_images,
-            batch_prompt_box,
-            api_base_url, 
-            api_key,
-            temperature_slider,
-            top_p_slider,
-            max_tokens_slider
-        ],
-        outputs=[batch_status, download_file],
-    )
-    
-    # 混合模式批量处理  
     def process_mix_batch_wrapper(files, base_url, api_key, temp, top_p, max_tokens,
-                                  t1, l1, w1, e1, t2, l2, w2, e2, t3, l3, w3, e3, t4, l4, w4, e4, t5, l5, w5, e5):
-        """包装混合模式批量处理函数"""
+                              t1, l1, w1, e1, t2, l2, w2, e2, t3, l3, w3, e3, t4, l4, w4, e4, t5, l5, w5, e5):
+        """优化的混合模式批量处理函数"""
         if not files:
             return "❌ 请先上传图片", gr.update(visible=False)
         
-        # 构建提示词配置
-        prompt_configs = []
+        # 🚀 限制单次上传数量
+        if len(files) > 1000:
+            return f"❌ 单次最多支持1000张图片，您上传了{len(files)}张，请分批处理", gr.update(visible=False)
         
-        # 检查每个提示词配置
+        # 构建提示词配置部分保持不变...
+        prompt_configs = []
         configs_data = [
             (t1, l1, w1, e1), (t2, l2, w2, e2), (t3, l3, w3, e3), (t4, l4, w4, e4), (t5, l5, w5, e5)
         ]
         
         for i, (prompt_type, prompt_length, weight, extra_options) in enumerate(configs_data):
-            if weight > 0:  # 只包含权重大于0的提示词
+            if weight > 0:
                 prompt = build_prompt(prompt_type, prompt_length, extra_options)
                 prompt_configs.append({
                     'prompt': prompt,
@@ -1184,27 +1174,194 @@ with gr.Blocks(theme=gr.themes.Soft(), title="🎨 JoyCaption 混合模式") as 
         if not prompt_configs:
             return "❌ 请至少设置一个权重大于0的提示词", gr.update(visible=False)
         
-        files_info = []
-        for file in files:
-            try:
-                original_filename = os.path.basename(file.name)
-                image = Image.open(file.name)
-                files_info.append((image, original_filename))
-            except Exception as e:
-                logging.error(f"无法打开图片 {file.name}: {str(e)}")
-                continue
+        # 📦 分批加载图片
+        processor = BatchFileProcessor(batch_size=50)
+        file_batches = processor.create_batches(files)
         
-        if not files_info:
-            return "❌ 没有有效的图片", gr.update(visible=False)
+        all_files_info = []
+        failed_files = []
         
+        for batch_idx, file_batch in enumerate(file_batches):
+            for file in file_batch:
+                try:
+                    original_filename = os.path.basename(file.name)
+                    image = Image.open(file.name)
+                    # 🔧 调整图片大小
+                    if max(image.size) > 1024:
+                        image.thumbnail((1024, 1024), Image.Resampling.LANCZOS)
+                    all_files_info.append((image, original_filename))
+                except Exception as e:
+                    failed_files.append(f"{os.path.basename(file.name)}: {str(e)}")
+                    continue
+        
+        if not all_files_info:
+            error_msg = "❌ 没有有效的图片\n" + "\n".join(failed_files[:10])
+            return error_msg, gr.update(visible=False)
+        
+        # 其余部分保持不变...
         status, zip_path = process_mix_batch_images(
-            files_info, prompt_configs, base_url, api_key, temp, top_p, max_tokens
+            all_files_info, prompt_configs, base_url, api_key, temp, top_p, max_tokens
         )
         
         if zip_path:
             return status, gr.update(value=zip_path, visible=True)
         else:
             return status, gr.update(visible=False)
+    def process_mix_batch_wrapper(files, base_url, api_key, temp, top_p, max_tokens,
+                                t1, l1, w1, e1, t2, l2, w2, e2, t3, l3, w3, e3, t4, l4, w4, e4, t5, l5, w5, e5):
+        """优化的混合模式批量处理函数"""
+        if not files:
+            return "❌ 请先上传图片", gr.update(visible=False)
+        
+        # 🚀 限制单次上传数量
+        if len(files) > 5000:
+            return f"❌ 单次最多支持5000张图片，您上传了{len(files)}张，请分批处理", gr.update(visible=False)
+        
+        # 构建提示词配置部分保持不变...
+        prompt_configs = []
+        configs_data = [
+            (t1, l1, w1, e1), (t2, l2, w2, e2), (t3, l3, w3, e3), (t4, l4, w4, e4), (t5, l5, w5, e5)
+        ]
+        
+        for i, (prompt_type, prompt_length, weight, extra_options) in enumerate(configs_data):
+            if weight > 0:
+                prompt = build_prompt(prompt_type, prompt_length, extra_options)
+                prompt_configs.append({
+                    'prompt': prompt,
+                    'weight': weight,
+                    'type': prompt_type,
+                    'index': i + 1
+                })
+        
+        if not prompt_configs:
+            return "❌ 请至少设置一个权重大于0的提示词", gr.update(visible=False)
+        
+        # 📦 分批加载图片
+        processor = BatchFileProcessor(batch_size=50)
+        file_batches = processor.create_batches(files)
+        
+        all_files_info = []
+        failed_files = []
+        
+        for batch_idx, file_batch in enumerate(file_batches):
+            for file in file_batch:
+                try:
+                    original_filename = os.path.basename(file.name)
+                    image = Image.open(file.name)
+                    # 🔧 调整图片大小
+                    if max(image.size) > 1024:
+                        image.thumbnail((1024, 1024), Image.Resampling.LANCZOS)
+                    all_files_info.append((image, original_filename))
+                except Exception as e:
+                    failed_files.append(f"{os.path.basename(file.name)}: {str(e)}")
+                    continue
+        
+        if not all_files_info:
+            error_msg = "❌ 没有有效的图片\n" + "\n".join(failed_files[:10])
+            return error_msg, gr.update(visible=False)
+        
+        # 其余部分保持不变...
+        status, zip_path = process_mix_batch_images(
+            all_files_info, prompt_configs, base_url, api_key, temp, top_p, max_tokens
+        )
+        
+        if zip_path:
+            return status, gr.update(value=zip_path, visible=True)
+        else:
+            return status, gr.update(visible=False)
+
+    # 批量处理
+    # def process_batch_wrapper(files, prompt, base_url, api_key, temp, top_p, max_tokens):
+    #     """包装批量处理函数以处理文件输入"""
+    #     if not files:
+    #         return "❌ 请先上传图片", gr.update(visible=False)
+        
+    #     files_info = []
+    #     for file in files:
+    #         try:
+    #             # 获取原始文件名
+    #             original_filename = os.path.basename(file.name)
+    #             image = Image.open(file.name)
+    #             files_info.append((image, original_filename))
+    #         except Exception as e:
+    #             logging.error(f"无法打开图片 {file.name}: {str(e)}")
+    #             continue
+        
+    #     if not files_info:
+    #         return "❌ 没有有效的图片", gr.update(visible=False)
+        
+    #     status, zip_path = process_batch_images(
+    #         files_info, prompt, base_url, api_key, temp, top_p, max_tokens
+    #     )
+        
+    #     if zip_path:
+    #         return status, gr.update(value=zip_path, visible=True)
+    #     else:
+    #         return status, gr.update(visible=False)
+    
+    # batch_generate_btn.click(
+    #     process_batch_wrapper,
+    #     inputs=[
+    #         batch_images,
+    #         batch_prompt_box,
+    #         api_base_url, 
+    #         api_key,
+    #         temperature_slider,
+    #         top_p_slider,
+    #         max_tokens_slider
+    #     ],
+    #     outputs=[batch_status, download_file],
+    # )
+    
+    # # 混合模式批量处理  
+    # def process_mix_batch_wrapper(files, base_url, api_key, temp, top_p, max_tokens,
+    #                               t1, l1, w1, e1, t2, l2, w2, e2, t3, l3, w3, e3, t4, l4, w4, e4, t5, l5, w5, e5):
+    #     """包装混合模式批量处理函数"""
+    #     if not files:
+    #         return "❌ 请先上传图片", gr.update(visible=False)
+        
+    #     # 构建提示词配置
+    #     prompt_configs = []
+        
+    #     # 检查每个提示词配置
+    #     configs_data = [
+    #         (t1, l1, w1, e1), (t2, l2, w2, e2), (t3, l3, w3, e3), (t4, l4, w4, e4), (t5, l5, w5, e5)
+    #     ]
+        
+    #     for i, (prompt_type, prompt_length, weight, extra_options) in enumerate(configs_data):
+    #         if weight > 0:  # 只包含权重大于0的提示词
+    #             prompt = build_prompt(prompt_type, prompt_length, extra_options)
+    #             prompt_configs.append({
+    #                 'prompt': prompt,
+    #                 'weight': weight,
+    #                 'type': prompt_type,
+    #                 'index': i + 1
+    #             })
+        
+    #     if not prompt_configs:
+    #         return "❌ 请至少设置一个权重大于0的提示词", gr.update(visible=False)
+        
+    #     files_info = []
+    #     for file in files:
+    #         try:
+    #             original_filename = os.path.basename(file.name)
+    #             image = Image.open(file.name)
+    #             files_info.append((image, original_filename))
+    #         except Exception as e:
+    #             logging.error(f"无法打开图片 {file.name}: {str(e)}")
+    #             continue
+        
+    #     if not files_info:
+    #         return "❌ 没有有效的图片", gr.update(visible=False)
+        
+    #     status, zip_path = process_mix_batch_images(
+    #         files_info, prompt_configs, base_url, api_key, temp, top_p, max_tokens
+    #     )
+        
+    #     if zip_path:
+    #         return status, gr.update(value=zip_path, visible=True)
+    #     else:
+    #         return status, gr.update(visible=False)
     
     mix_generate_btn.click(
         process_mix_batch_wrapper,
