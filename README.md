@@ -49,8 +49,8 @@
 
 #### 1. 克隆项目
 ```bash
-git clone <your-repo-url>
-cd joycaption-vllm
+git clone https://github.com/GuardSkill/JoyCaptionVLLM.git
+cd JoyCaptionVLLM
 ```
 
 #### 2. 创建虚拟环境
@@ -70,11 +70,11 @@ pip install vllm gradio openai pillow requests
 ```bash
 # 使用 Hugging Face Hub
 pip install huggingface_hub
-huggingface-cli download fancyfeast/llama-joycaption-beta-one-hf-llava --local-dir ./llama-joycaption-alpha-two-hf-llava
+huggingface-cli download fancyfeast/llama-joycaption-beta-one-hf-llava --local-dir ./llama-joycaption-beta-one-hf-llava
 
 # 或者使用 git lfs
 git lfs install
-git clone https://huggingface.co/fancyfeast/llama-joycaption-beta-one-hf-llava ./llama-joycaption-alpha-two-hf-llava
+git clone https://huggingface.co/fancyfeast/llama-joycaption-beta-one-hf-llava ./llama-joycaption-beta-one-hf-llava
 ```
 
 ### 📖 使用教程
@@ -91,7 +91,7 @@ chmod +x start_command.sh
 或者手动启动：
 
 ```bash
-CUDA_VISIBLE_DEVICES=0 vllm serve llama-joycaption-alpha-two-hf-llava \
+CUDA_VISIBLE_DEVICES=0 vllm serve llama-joycaption-beta-one-hf-llava \
     --max-model-len 4096 \
     --enable-prefix-caching \
     --port 8000
@@ -183,81 +183,6 @@ python image_captioning.py \
 
 **支持的图像格式**：`.png`, `.jpg`, `.jpeg`, `.bmp`, `.gif`, `.webp`
 
-#### 4. 代码调用示例
-
-参考 `openai_client.py` 的实现：
-
-```python
-from openai import OpenAI
-import base64
-
-# 创建客户端
-client = OpenAI(
-    api_key='your-api-key',
-    base_url='http://192.168.5.212:8000/v1'
-)
-
-# 处理本地图片
-def process_local_image(image_path, prompt):
-    with open(image_path, "rb") as image_file:
-        base64_image = base64.b64encode(image_file.read()).decode("utf-8")
-    
-    image_data = f"data:image/jpeg;base64,{base64_image}"
-    
-    model_name = client.models.list().data[0].id
-    response = client.chat.completions.create(
-        model=model_name,
-        messages=[
-            {
-                'role': 'system',
-                'content': 'You are a helpful image captioner.',
-            },
-            {
-                'role': 'user',
-                'content': [
-                    {'type': 'text', 'text': prompt},
-                    {'type': 'image_url', 'image_url': {'url': image_data}}
-                ],
-            }
-        ],
-        temperature=0.9,
-        top_p=0.7,
-        max_tokens=256
-    )
-    
-    return response.choices[0].message.content.strip()
-
-# 处理网络图片
-def process_url_image(image_url, prompt):
-    model_name = client.models.list().data[0].id
-    response = client.chat.completions.create(
-        model=model_name,
-        messages=[
-            {
-                'role': 'system',
-                'content': 'You are a helpful image captioner.',
-            },
-            {
-                'role': 'user',
-                'content': [
-                    {'type': 'text', 'text': prompt},
-                    {'type': 'image_url', 'image_url': {'url': image_url}}
-                ],
-            }
-        ],
-        temperature=0.9,
-        top_p=0.7,
-        max_tokens=256
-    )
-    
-    return response.choices[0].message.content.strip()
-
-# 使用示例
-prompt = "Write a descriptive caption for this image in a casual tone."
-result = process_local_image("/path/to/image.jpg", prompt)
-print(result)
-```
-
 ### ⚙️ 配置说明
 
 #### 模型服务配置
@@ -266,7 +191,7 @@ print(result)
 
 ```bash
 #!/bin/bash
-CUDA_VISIBLE_DEVICES=0 vllm serve llama-joycaption-alpha-two-hf-llava \
+CUDA_VISIBLE_DEVICES=0 vllm serve llama-joycaption-beta-one-hf-llava \
     --max-model-len 4096 \           # 最大序列长度
     --enable-prefix-caching \        # 启用前缀缓存
     --port 8000 \                    # API 端口
@@ -309,20 +234,20 @@ demo.launch(
 1. **模型加载失败**
    ```bash
    # 检查模型文件是否完整
-   ls -la ./models/llama-joycaption-alpha-two-hf-llava
+   ls -la ./llama-joycaption-beta-one-hf-llava
    
    # 重新下载模型
-   rm -rf ./models/llama-joycaption-alpha-two-hf-llava
-   huggingface-cli download fancyfeast/llama-joycaption-alpha-two-hf-llava --local-dir ./models/llama-joycaption-alpha-two-hf-llava
+   rm -rf ./llama-joycaption-beta-one-hf-llava
+   huggingface-cli download fancyfeast/llama-joycaption-beta-one-hf-llava --local-dir ./llama-joycaption-beta-one-hf-llava
    ```
 
 2. **GPU 内存不足**
    ```bash
    # 减少最大序列长度
-   vllm serve llama-joycaption-alpha-two-hf-llava --max-model-len 2048
+   vllm serve llama-joycaption-beta-one-hf-llava --max-model-len 2048
    
    # 或调整 GPU 内存使用率
-   vllm serve llama-joycaption-alpha-two-hf-llava --gpu-memory-utilization 0.8
+   vllm serve llama-joycaption-beta-one-hf-llava --gpu-memory-utilization 0.8
    ```
 
 3. **API 连接失败**
@@ -331,7 +256,7 @@ demo.launch(
    - 验证防火墙设置
 
 4. **批量处理ZIP文件为空**
-   - 检查 `app_mix.py` 中的文件写入代码是否被注释
+   - 检查 `app.py` 中的文件写入代码是否被注释
    - 确保输出目录有写入权限
 
 ---
@@ -380,8 +305,8 @@ A comprehensive toolkit for JoyCaption model API service based on VLLM, providin
 
 #### 1. Clone Repository
 ```bash
-git clone <your-repo-url>
-cd joycaption-vllm
+git clone https://github.com/GuardSkill/JoyCaptionVLLM.git
+cd joycaptionVLLM
 ```
 
 #### 2. Create Virtual Environment
@@ -401,11 +326,11 @@ pip install vllm gradio openai pillow requests
 ```bash
 # Using Hugging Face Hub
 pip install huggingface_hub
-huggingface-cli download fancyfeast/llama-joycaption-alpha-two-hf-llava --local-dir ./models/llama-joycaption-alpha-two-hf-llava
+huggingface-cli download fancyfeast/llama-joycaption-beta-one-hf-llava --local-dir ./llama-joycaption-beta-one-hf-llava
 
 # Or using git lfs
 git lfs install
-git clone https://huggingface.co/fancyfeast/llama-joycaption-alpha-two-hf-llava ./models/llama-joycaption-alpha-two-hf-llava
+git clone https://huggingface.co/fancyfeast/llama-joycaption-beta-one-hf-llava ./llama-joycaption-beta-one-hf-llava
 ```
 
 ### 📖 Usage Guide
@@ -422,7 +347,7 @@ chmod +x start_command.sh
 Or start manually:
 
 ```bash
-CUDA_VISIBLE_DEVICES=0 vllm serve llama-joycaption-alpha-two-hf-llava \
+CUDA_VISIBLE_DEVICES=0 vllm serve llama-joycaption-beta-one-hf-llava \
     --max-model-len 4096 \
     --enable-prefix-caching \
     --port 8000
@@ -441,7 +366,7 @@ After successful startup, the API will be available at `http://localhost:8000`.
 Launch Gradio Web interface:
 
 ```bash
-python app_mix.py --port 7860 --host 0.0.0.0
+python app.py --port 7860 --host 0.0.0.0
 ```
 
 **Interface Modules**:
@@ -597,7 +522,7 @@ Edit `start_command.sh` to customize startup parameters:
 
 ```bash
 #!/bin/bash
-CUDA_VISIBLE_DEVICES=0 vllm serve llama-joycaption-alpha-two-hf-llava \
+CUDA_VISIBLE_DEVICES=0 vllm serve llama-joycaption-beta-one-hf-llava \
     --max-model-len 4096 \           # Maximum sequence length
     --enable-prefix-caching \        # Enable prefix caching
     --port 8000 \                    # API port
@@ -631,20 +556,20 @@ demo.launch(
 1. **Model Loading Failed**
    ```bash
    # Check if model files are complete
-   ls -la ./models/llama-joycaption-alpha-two-hf-llava
+   ls -la ./llama-joycaption-beta-one-hf-llava
    
    # Re-download model
-   rm -rf ./models/llama-joycaption-alpha-two-hf-llava
-   huggingface-cli download fancyfeast/llama-joycaption-alpha-two-hf-llava --local-dir ./models/llama-joycaption-alpha-two-hf-llava
+   rm -rf ./llama-joycaption-beta-one-hf-llava
+   huggingface-cli download fancyfeast/llama-joycaption-beta-one-hf-llava --local-dir ./llama-joycaption-beta-one-hf-llava
    ```
 
 2. **GPU Memory Insufficient**
    ```bash
    # Reduce maximum sequence length
-   vllm serve llama-joycaption-alpha-two-hf-llava --max-model-len 2048
+   vllm serve llama-joycaption-beta-one-hf-llava --max-model-len 2048
    
    # Or adjust GPU memory utilization
-   vllm serve llama-joycaption-alpha-two-hf-llava --gpu-memory-utilization 0.8
+   vllm serve llama-joycaption-beta-one-hf-llava --gpu-memory-utilization 0.8
    ```
 
 3. **API Connection Failed**
