@@ -70,11 +70,11 @@ pip install vllm gradio openai pillow requests
 ```bash
 # 使用 Hugging Face Hub
 pip install huggingface_hub
-huggingface-cli download fancyfeast/llama-joycaption-alpha-two-hf-llava --local-dir ./models/llama-joycaption-alpha-two-hf-llava
+huggingface-cli download fancyfeast/llama-joycaption-beta-one-hf-llava --local-dir ./llama-joycaption-alpha-two-hf-llava
 
 # 或者使用 git lfs
 git lfs install
-git clone https://huggingface.co/fancyfeast/llama-joycaption-alpha-two-hf-llava ./models/llama-joycaption-alpha-two-hf-llava
+git clone https://huggingface.co/fancyfeast/llama-joycaption-beta-one-hf-llava ./llama-joycaption-alpha-two-hf-llava
 ```
 
 ### 📖 使用教程
@@ -110,7 +110,7 @@ CUDA_VISIBLE_DEVICES=0 vllm serve llama-joycaption-alpha-two-hf-llava \
 启动 Gradio Web 界面：
 
 ```bash
-python app_mix.py --port 7860 --host 0.0.0.0
+python app.py --port 8888 --host 0.0.0.0      # 新版界面和新版的VLLM默认参数
 ```
 
 **功能模块**：
